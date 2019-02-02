@@ -1,3 +1,4 @@
+import os
 import pygame
 from pygame.locals import *
 import pygame.gfxdraw
@@ -5,6 +6,8 @@ import math
 import cairo
 import numpy
 from drawlib import *
+from obd2lib import *
+import datetime
 
 # Graph
 import matplotlib as mpl
@@ -15,7 +18,6 @@ mpl.use("Agg")
 
 # Weather
 from weather import *
-from cairosvg import svg2png
 
 '''
 	Időjárás
@@ -30,18 +32,19 @@ from cairosvg import svg2png
 	Üzemanyag ára
 	Most tankoltam
 	Megtett km mióta tankoltál
-	Olajcsere
 	Motor hömérséklet
 	Lambda szenzor adatait
 	Kinti/Benti hőmérséklet (Pi hőszenzor GPIO porton)
 	Ajtók nyitva
 	Kamera
 	Zenelejátszó
-	Időmérés (Rendes + Negyedmérföld)
+	Időmérés (Rendes + Negyedmérföld) 0,402336 km == 40.2336 m 
 	Engine run time
-	Guminyomás
 	Throttlepos
 '''
+
+trip_km = 0
+trip_h = 0
 
 screen_size = (640, 480)
 screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
@@ -52,10 +55,11 @@ screen_center = [int(screen_width / 2), int(screen_height / 2)]
 task = 0
 task_current = 0
 
-surface_speedometer = pygame.Surface(screen_size)
 surface_fuelusing = pygame.Surface(screen_size)
+'''surface_speedometer = pygame.Surface(screen_size)
 surface_sideview = pygame.Surface(screen_size)
 surface_weather = pygame.Surface(screen_size)
+surface_music = pygame.Surface(screen_size)'''
 surface_x = 0
 
 # Draw 
@@ -69,13 +73,19 @@ def draw_hud():
 	screen.fill(color_back)
 
 	surface_speedometer = draw_speedometer()
+	surface_sideview = draw_sideview()
+	#surface_music = draw_music()
 
 	screen.blit(surface_speedometer, (surface_x + (screen_width * 0),0))
 	screen.blit(surface_fuelusing, (surface_x + (screen_width * 1),0))
 	screen.blit(surface_sideview, (surface_x + (screen_width * 2),0))
 	screen.blit(surface_weather, (surface_x + (screen_width * 3),0))
+	#screen.blit(surface_music, (surface_x + (screen_width * 4),0))
 
 	pygame.display.update()
+
+fuelicon = cairo.ImageSurface.create_from_png("icons/fuel.png")
+tempicon = cairo.ImageSurface.create_from_png("icons/temp.png")
 
 def draw_speedometer():
 
@@ -83,57 +93,34 @@ def draw_speedometer():
 	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
 	ctx = cairo.Context(surface)
 
+	# Draw time
+	x = int(screen_center[0])
+	y = int(screen_center[1] - (screen_center[1] / 2))
+	draw_time(ctx,x,y)
+
 	# Draw kmh
+	r = 120
 	x = int(screen_center[0] - (screen_center[0] / 2))
 	y = int(screen_center[1])
-	r = 120
-
-	ctx.set_source_rgb(1,1,1)
-	ctx.set_font_size(54)
-	draw_text_center(ctx, x, y + 20, '20')
-	ctx.set_font_size(28)
-	draw_text_center(ctx, x, y + 48, 'kmh')
-
-	ctx.set_line_width(6)
-	ctx.set_source_rgb(0.12, 0.12, 0.12)
-	ctx.arc(x, y, r, 0, 2 * math.pi)
-	ctx.stroke()
-
-	# Blue line
-	r = 110
-	start = 0.8 * math.pi
-	end = (0.8 * math.pi) + (1.2 * math.pi)
-
-	ctx.set_line_width(6)
-	ctx.set_source_rgb(0.85,0.61,0.24)
-	ctx.arc(x, y, r, start, end)
-	ctx.stroke()
+	draw_meter(ctx,x,y,r,'kmh',120,220)
 
 	# Draw rpm
+	r = 120
 	x = int(screen_center[0] + (screen_center[0] / 2))
 	y = int(screen_center[1])
-	r = 120
+	draw_meter(ctx,x,y,r,'rpm',4000,8000,True)
 
-	ctx.set_source_rgb(1,1,1)
-	ctx.set_font_size(54)
-	draw_text_center(ctx, x, y + 20, '800')
-	ctx.set_font_size(28)
-	draw_text_center(ctx, x, y + 48, 'rpm')
+	# Draw fuellevel
+	r = 32
+	x = int(screen_center[0] - (screen_center[0] / 2) - 96)
+	y = int(screen_height - 64)
+	draw_level(ctx,x,y,r,fuelicon,20,100, True, True)
 
-	ctx.set_line_width(6)
-	ctx.set_source_rgb(0.12,0.12,0.12)
-	ctx.arc(x, y, r, 0, 2 * math.pi)
-	ctx.stroke()
-
-	# Blue line
-	r = 110
-	start = 0.8 * math.pi
-	end = (0.8 * math.pi) + (1.2 * math.pi)
-
-	ctx.set_line_width(6)
-	ctx.set_source_rgb(0.85,0.61,0.24)
-	ctx.arc(x, y, r, start, end)
-	ctx.stroke()
+	# Draw enginetemp
+	r = 32
+	x = int(screen_center[0] + (screen_center[0] / 2) + 96)
+	y = int(screen_height - 64)
+	draw_level(ctx,x,y,r,tempicon,20,100, True)
 
 	# Convert to surface
 	return pygame.image.frombuffer(surface.get_data(), (screen_width, screen_height), 'RGBA')
@@ -167,25 +154,36 @@ def draw_graph(ctx):
 	canvas = agg.FigureCanvasAgg(fig)
 	canvas.draw()
 	renderer = canvas.get_renderer()
-	raw_data = renderer.tostring_rgb()
 
 	size = canvas.get_width_height()
-	surf = pygame.image.fromstring(raw_data, size, "RGB")
+	surf = pygame.image.frombuffer(renderer.tostring_rgb(), size, "RGB")
 	surface_fuelusing.blit(surf, (0,0))
 
-def draw_sideview(ctx):
+# Import image
+carimage = cairo.ImageSurface.create_from_png("golf.png")
 
-	# Import image
-	carimage = pygame.image.load("golf.jpg")
-	carimage = pygame.transform.scale(carimage, screen_size)
-	imagerect = carimage.get_rect()
+def draw_sideview():
+
+	# Init cairo
+	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
+	ctx = cairo.Context(surface)
 
 	# Draw image
-	ctx.fill(color_back)
-	ctx.blit(carimage, imagerect)
-	pygame.display.update()
+	ctx.fill()
+	ctx.scale(1,1)
+	ctx.set_source_surface(carimage, -1, -1)
+	ctx.paint()
 
-import os
+	# Draw info
+	ctx.set_font_size(24)
+	ctx.set_source_rgb(1,1,1)
+	draw_text(ctx, 32, 32 + (0 * 28), 'Megtett út: ' + str(trip_km) + ' km')
+	draw_text(ctx, 32, 32 + (1 * 28), 'Motor futás idő: ' + str(trip_h))
+
+	return pygame.image.frombuffer(surface.get_data(), screen_size, 'RGBA').convert()
+
+
+# Import weather images
 weatherimage = {}
 weatherfiles = os.listdir("weather/")
 
@@ -204,19 +202,20 @@ def draw_weather():
 
 	# If error message is empty
 	if 'message' not in weather:
-		# Draw
 		x = 8
 		y = 28
 
 		ctx.set_font_size(24)
 		ctx.set_source_rgb(1,1,1)
-		draw_text(ctx, x, y + (30 * 0), 'Location: ' + str(weather['name']))
-		draw_text(ctx, x, y + (30 * 1), 'Temp: ' + str(weather['main']['temp']) + '°')
-		draw_text(ctx, x, y + (30 * 2), 'Windspeed: ' + str(weather['wind']['speed']) + ' meter/sec')
+		draw_text(ctx, x, y + (30 * 0), 'Hely: ' + str(weather['name']))
+		draw_text(ctx, x, y + (30 * 1), 'Hőmérséklet: ' + str(weather['main']['temp']) + '°')
+		draw_text(ctx, x, y + (30 * 2), 'Szél: ' + str(weather['wind']['speed']) + ' meter/sec')
 
 		for w in weather['weather']:
 			draw_text(ctx, x, y + (30 * 3), w['description'])
-			ctx.set_source_surface(weatherimage[w['icon'] + '.png'], 0, 120) 
+
+			# Draw image
+			ctx.set_source_surface(weatherimage[w['icon'] + '.png'], 4, 128) 
 			ctx.paint()
 
 	else:
@@ -231,7 +230,6 @@ def draw_weather():
 
 # Draw once
 draw_graph(surface_fuelusing)
-draw_sideview(surface_sideview)
 surface_weather = draw_weather()
 
 # Running endless
@@ -277,11 +275,14 @@ while running:
 	if (mousehold == False):
 		if(int(surface_x) < - task * screen_width):
 			surface_x += (math.fabs(surface_x + (task * screen_width)) * 0.2)
-	
 		if(int(surface_x) > - task * screen_width):
 			surface_x -= (math.fabs(surface_x + (task * screen_width)) * 0.2)
+		if(math.fabs(surface_x + (task * screen_width)) < 2):
+			task_current = task
 
 	draw_hud()
 	clock.tick(60)
 
+obdconn.unwatch_all()
+obdconn.close()
 pygame.quit()
