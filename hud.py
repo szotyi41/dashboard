@@ -15,6 +15,7 @@ mpl.use("Agg")
 
 # Weather
 from weather import *
+from cairosvg import svg2png
 
 '''
 	Időjárás
@@ -31,6 +32,8 @@ from weather import *
 	Megtett km mióta tankoltál
 	Olajcsere
 	Motor hömérséklet
+	Lambda szenzor adatait
+	Kinti/Benti hőmérséklet (Pi hőszenzor GPIO porton)
 	Ajtók nyitva
 	Kamera
 	Zenelejátszó
@@ -173,14 +176,22 @@ def draw_graph(ctx):
 def draw_sideview(ctx):
 
 	# Import image
-	image = pygame.image.load("golf.jpg")
-	image = pygame.transform.scale(image, screen_size)
-	imagerect = image.get_rect()
+	carimage = pygame.image.load("golf.jpg")
+	carimage = pygame.transform.scale(carimage, screen_size)
+	imagerect = carimage.get_rect()
 
 	# Draw image
 	ctx.fill(color_back)
-	ctx.blit(image, imagerect)
+	ctx.blit(carimage, imagerect)
 	pygame.display.update()
+
+import os
+weatherimage = {}
+weatherfiles = os.listdir("weather/")
+
+for file in weatherfiles:
+	if file.endswith(".png"):
+		weatherimage[file] = cairo.ImageSurface.create_from_png("weather/" + file)
 
 def draw_weather():
 
@@ -205,6 +216,9 @@ def draw_weather():
 
 		for w in weather['weather']:
 			draw_text(ctx, x, y + (30 * 3), w['description'])
+			ctx.set_source_surface(weatherimage[w['icon'] + '.png'], 0, 120) 
+			ctx.paint()
+
 	else:
 
 		# Error message
