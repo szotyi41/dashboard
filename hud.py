@@ -5,10 +5,7 @@ import pygame.gfxdraw
 import math
 import cairo
 import numpy
-from drawlib import *
-from obd2lib import *
 import datetime
-
 
 # Graph
 import matplotlib as mpl
@@ -17,9 +14,10 @@ import matplotlib.pyplot as plt
 import pylab
 mpl.use("Agg")
 
-# Weather
+from drawlib import *
+from obd2lib import *
 from weather import *
-
+from music import *
 
 '''
 	Időjárás
@@ -92,7 +90,9 @@ def draw_hud():
 # Draw musicplayer
 i = 0
 musiclist = get_music_list()
-#img = GdkPixbuf.Pixbuf.new_from_file("1.jpg") 
+defaultimage = Image.open("default.png")
+defaultcover = pil2cairo(defaultimage, 128, 128)
+
 
 def draw_music():
 
@@ -102,18 +102,32 @@ def draw_music():
 
 	i = 0
 	for music in musiclist:
-		x = int(screen_center[0] - (screen_center[0] / 2)) - (i * 4)
-		y = int(screen_center[1])
+		
+		if 'song' in music['data']['ID3TagV2']: 
+			title = music['data']['ID3TagV2']['song'].encode(encoding='UTF-8',errors='ignore')
+		else:
+			title = music['filename']
 
-		ctx.fill()
-		ctx.scale(1,1)
-		ctx.set_source_surface(music['cover'], x, y)
-		ctx.paint()
+		if 'cover' in music:
+			cover = music['cover']
+		else:
+			cover = defaultcover
+
+		x = i * 128
+		y = 0
 
 		ctx.save()
-		ctx.set_font_size(20)
+		ctx.fill()
+		ctx.set_source_surface(cover, x, y)
+		ctx.paint()
+		ctx.stroke()
+		ctx.restore()
+		ctx.close_path()	
+
+		ctx.save()
+		ctx.set_font_size(24)
 		ctx.set_source_rgb(1, 1, 1)
-		draw_text(ctx,x,y,music['data']['ID3TagV2']['song'])
+		draw_text_center(ctx,x+64,y+160, str(title))
 		ctx.stroke()
 		ctx.restore()
 		ctx.close_path()	
