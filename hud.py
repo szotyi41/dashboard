@@ -9,6 +9,7 @@ from drawlib import *
 from obd2lib import *
 import datetime
 
+
 # Graph
 import matplotlib as mpl
 import matplotlib.backends.backend_agg as agg
@@ -19,15 +20,19 @@ mpl.use("Agg")
 # Weather
 from weather import *
 
+
 '''
 	Időjárás
 	Átlagfogyasztás
 	Megtett út
-	Megtenni kívánt út
+	Tankolás óta eltelt idő
+	Tankolás óta elhasznált üzemanyag
+	Tankolás óta futott km
 	GPS
 	Hatótáv
 	Jelenlegi fogyasztás
 	Üzemanyag mennyiség
+	Motor hőfok
 	Üzemanyag típusa
 	Üzemanyag ára
 	Most tankoltam
@@ -74,16 +79,50 @@ def draw_hud():
 
 	surface_speedometer = draw_speedometer()
 	surface_sideview = draw_sideview()
-	#surface_music = draw_music()
+	surface_music = draw_music()
 
 	screen.blit(surface_speedometer, (surface_x + (screen_width * 0),0))
 	screen.blit(surface_fuelusing, (surface_x + (screen_width * 1),0))
 	screen.blit(surface_sideview, (surface_x + (screen_width * 2),0))
 	screen.blit(surface_weather, (surface_x + (screen_width * 3),0))
-	#screen.blit(surface_music, (surface_x + (screen_width * 4),0))
+	screen.blit(surface_music, (surface_x + (screen_width * 4),0))
 
 	pygame.display.update()
 
+# Draw musicplayer
+i = 0
+musiclist = get_music_list()
+#img = GdkPixbuf.Pixbuf.new_from_file("1.jpg") 
+
+def draw_music():
+
+	# Init cairo
+	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
+	ctx = cairo.Context(surface)
+
+	i = 0
+	for music in musiclist:
+		x = int(screen_center[0] - (screen_center[0] / 2)) - (i * 4)
+		y = int(screen_center[1])
+
+		ctx.fill()
+		ctx.scale(1,1)
+		ctx.set_source_surface(music['cover'], x, y)
+		ctx.paint()
+
+		ctx.save()
+		ctx.set_font_size(20)
+		ctx.set_source_rgb(1, 1, 1)
+		draw_text(ctx,x,y,music['data']['ID3TagV2']['song'])
+		ctx.stroke()
+		ctx.restore()
+		ctx.close_path()	
+		i += 1
+
+	return pygame.image.frombuffer(surface.get_data(), (screen_width, screen_height), 'RGBA')
+
+
+# Draw speedometer
 fuelicon = cairo.ImageSurface.create_from_png("icons/fuel.png")
 tempicon = cairo.ImageSurface.create_from_png("icons/temp.png")
 
@@ -122,6 +161,18 @@ def draw_speedometer():
 	y = int(screen_height - 64)
 	draw_level(ctx,x,y,r,tempicon,20,100, True)
 
+	# Draw info
+	x = int(screen_center[0])
+	y = int(screen_height - 32)
+
+	ctx.save()
+	ctx.set_font_size(20)
+	ctx.set_source_rgb(1, 1, 1)
+	draw_text_center(ctx,x,y,'Hatótáv: 32 km')
+	ctx.stroke()
+	ctx.restore()
+	ctx.close_path()	
+
 	# Convert to surface
 	return pygame.image.frombuffer(surface.get_data(), (screen_width, screen_height), 'RGBA')
 
@@ -145,10 +196,10 @@ def draw_graph(ctx):
 
 	fig, ax = plt.subplots()
 	x = numpy.linspace(0, 2, 10)
-	plt.plot(x, x, label="Consumption")
-	plt.xlabel('Way (km)')
-	plt.ylabel('Consumption (l/100km)')
-	plt.title("Average consumption")
+	plt.plot(x, x, label="Fogyasztás")
+	plt.xlabel('Út (km)')
+	plt.ylabel('Fogyasztás (l/100km)')
+	plt.title("Átlagfogyasztás")
 	plt.legend()
 
 	canvas = agg.FigureCanvasAgg(fig)

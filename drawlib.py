@@ -2,6 +2,46 @@ from PIL import Image
 from time import gmtime, strftime
 import math
 
+import os
+import io
+from mp3_tagger import MP3File
+from mutagen import File
+import numpy
+import sys
+import array
+import cairo
+
+def pil2cairo(im):
+    assert sys.byteorder == 'little', 'We don\'t support big endian'
+    if im.mode != 'RGBA':
+        im = im.convert('RGBA')
+
+    s = im.tobytes('raw', 'RGBA')
+    a = array.array('B', s)
+    dest = cairo.ImageSurface(cairo.FORMAT_ARGB32, im.size[0], im.size[1])
+    ctx = cairo.Context(dest)
+    non_premult_src_wo_alpha = cairo.ImageSurface.create_for_data(a, cairo.FORMAT_RGB24, im.size[0], im.size[1])
+    non_premult_src_alpha = cairo.ImageSurface.create_for_data(a, cairo.FORMAT_ARGB32, im.size[0], im.size[1])
+    ctx.set_source_surface(non_premult_src_wo_alpha)
+    ctx.mask_surface(non_premult_src_alpha)
+    return dest
+
+def get_music_list():
+    musiclist = []
+    for file in os.listdir("music/"):
+        if file.endswith(".mp3"):
+            musicdata = {}
+            filename = 'music/' + file
+
+            # Get tags
+            mp3 = MP3File(filename)
+            musicdata['data'] = mp3.get_tags()
+            musicdata['cover'] = pil2cairo(Image.open(io.BytesIO(File(filename).tags['APIC:'].data)))
+            musiclist.append(musicdata)
+
+    return musiclist
+
+
 def draw_text_center(ctx,x,y,label):
     ctx.select_font_face("Arial")
     ctx.set_antialias()
