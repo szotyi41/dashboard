@@ -4,6 +4,7 @@ import math
 import sys
 import array
 import cairo
+import pygame
 
 def pil2cairo(im, w=0, h=0):
     assert sys.byteorder == 'little', 'We don\'t support big endian'
@@ -21,6 +22,23 @@ def pil2cairo(im, w=0, h=0):
     ctx.set_source_surface(non_premult_src_wo_alpha)
     ctx.mask_surface(non_premult_src_alpha)
     return dest
+
+def hover(x,y,w,h):
+    mouse = pygame.mouse.get_pos()
+    return x+w > mouse[0] > x and y+h > mouse[1] > y
+
+def draw_button(ctx,x,y,w,h,label):
+    ctx.save()
+    ctx.set_font_size(24)
+    if hover(x,y,w,h):
+        ctx.set_source_rgb(0.2,0.2,0.2)
+    else:
+        ctx.set_source_rgb(0.8,0.8,0.8)
+    ctx.rectangle(x,y,w,h)
+    ctx.stroke()
+    ctx.restore()
+    ctx.close_path()
+    draw_text_center(ctx, x+(w/2), y+(h/2), label)
 
 
 def draw_text_center(ctx,x,y,label):

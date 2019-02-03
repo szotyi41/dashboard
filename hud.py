@@ -19,38 +19,11 @@ from obd2lib import *
 from weather import *
 from music import *
 
-'''
-	Időjárás
-	Átlagfogyasztás
-	Megtett út
-	Tankolás óta eltelt idő
-	Tankolás óta elhasznált üzemanyag
-	Tankolás óta futott km
-	GPS
-	Hatótáv
-	Jelenlegi fogyasztás
-	Üzemanyag mennyiség
-	Motor hőfok
-	Üzemanyag típusa
-	Üzemanyag ára
-	Most tankoltam
-	Megtett km mióta tankoltál
-	Motor hömérséklet
-	Lambda szenzor adatait
-	Kinti/Benti hőmérséklet (Pi hőszenzor GPIO porton)
-	Ajtók nyitva
-	Kamera
-	Zenelejátszó
-	Időmérés (Rendes + Negyedmérföld) 0,402336 km == 40.2336 m 
-	Engine run time
-	Throttlepos
-'''
-
 trip_km = 0
 trip_h = 0
 
 screen_size = (640, 480)
-screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
+screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE) 
 screen_width = screen.get_width()
 screen_height = screen.get_height()
 screen_center = [int(screen_width / 2), int(screen_height / 2)]
@@ -87,14 +60,19 @@ def draw_hud():
 
 	pygame.display.update()
 
-# Draw musicplayer
+# Draw music player
 i = 0
-musiclist = get_music_list()
+mus = Music()
+musiclist = mus.getlist()
+mus.playfirst()
+
 defaultimage = Image.open("default.png")
 defaultcover = pil2cairo(defaultimage, 128, 128)
 
 
 def draw_music():
+
+	
 
 	# Init cairo
 	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
@@ -132,6 +110,9 @@ def draw_music():
 		ctx.restore()
 		ctx.close_path()	
 		i += 1
+
+	draw_button(ctx,32,256,128,128,"play")
+	draw_text(ctx,160,256,"Time: "+str(mus.getposition()))
 
 	return pygame.image.frombuffer(surface.get_data(), (screen_width, screen_height), 'RGBA')
 
@@ -320,20 +301,30 @@ while running:
 
 		# Change screens
 		if event.type == pygame.MOUSEBUTTONDOWN:
-			mouse = list(pygame.mouse.get_pos())
+			mouse = pygame.mouse.get_pos()
 			surfacehold_x = surface_x - mouse[0]
 			mousehold = True
 
+			if task_current == 4:
+				if hover(32,256,128,128):
+					mus.playpause()
+
+				i = 0
+				for music in musiclist:
+					if hover((i*128),0,(i*128)+110,128):
+						mus.load(music['filename'])
+					i+=1
+
 		if event.type == pygame.MOUSEBUTTONUP:
-			if surface_x < -task * screen_width:
+			'''if surface_x < -task * screen_width:
 				task += 1
 			elif surface_x > -task * screen_height:
-				task -= 1
+				task -= 1'''
 			mousehold = False
 
 		if event.type == pygame.MOUSEMOTION:
 			if mousehold == True:
-				mouse = list(pygame.mouse.get_pos())
+				mouse = pygame.mouse.get_pos()
 				surface_x = mouse[0] + surfacehold_x
 
 	# Smooth page select
