@@ -1,9 +1,18 @@
 # Dashboard
 Python dashboard
+
+# Install
+```
 apt install python3-tk
+brew install python3
+```
 
 You can install other requiments with:
-pip3 install -r requirements.txt 
+```pip3 install -r requirements.txt```
+
+# Run
+```python3 hud.py```
+
 
 # Modules
 
