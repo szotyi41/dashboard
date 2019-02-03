@@ -72,8 +72,6 @@ defaultcover = pil2cairo(defaultimage, 128, 128)
 
 def draw_music():
 
-	
-
 	# Init cairo
 	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
 	ctx = cairo.Context(surface)
@@ -206,7 +204,8 @@ def draw_graph(ctx):
 	surface_fuelusing.blit(surf, (0,0))
 
 # Import image
-carimage = cairo.ImageSurface.create_from_png("golf.png")
+carimg = Image.open("golf2.png")
+carimage = pil2cairo(carimg, screen_width, screen_height)
 
 def draw_sideview():
 
