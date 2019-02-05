@@ -45,8 +45,6 @@ for file in weatherfiles:
     if file.endswith(".png"):
         weatherimage[file] = cairo.ImageSurface.create_from_png("weather/" + file)
 
-print(weatherimage)
-
 def draw_weather():
 
     # Init cairo

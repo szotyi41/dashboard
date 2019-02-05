@@ -5,3 +5,5 @@ tkinter
 cairosvg
 obd
 pymitter
+pprint
+json

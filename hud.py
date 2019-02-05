@@ -1,10 +1,6 @@
-import os
 import pygame
 from pygame.locals import *
-import pygame.gfxdraw
-import math
-import cairo
-import numpy
+import math 
 
 from speedometer import *
 from sideview import *
