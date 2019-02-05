@@ -1,7 +1,9 @@
 import obd
+from obd import OBDStatus
 
 global obdconn
 global trip_km
+
 obdconn = obd.Async()
 '''
 obdstatic = obd.OBD()
@@ -9,6 +11,7 @@ dtc = obdstatic.query(obd.commands.GET_CURRENT_DTC)
 print(dtc)
 obdstatic.close()
 '''
+
 def get_connected():
 	return obdconn.status()
 
@@ -66,13 +69,17 @@ def get_fuel_rate(data):
 		fuel_rate = int(data.value.magnitude)
 		return fuel_rate
 
-obdconn.watch(obd.commands.SPEED, callback=get_speed)
-obdconn.watch(obd.commands.RPM, callback=get_rpm)
-obdconn.watch(obd.commands.ENGINE_LOAD, callback=get_load)
-obdconn.watch(obd.commands.FUEL_STATUS, callback=get_fuel_status)
-obdconn.watch(obd.commands.FUEL_LEVEL, callback=get_fuel_level)
-obdconn.watch(obd.commands.COOLANT_TEMP, callback=get_engine_temp)
-obdconn.watch(obd.commands.OIL_TEMP, callback=get_oil_temp)
-obdconn.watch(obd.commands.THROTTLE_POS, callback=get_throttle_pos)
-obdconn.watch(obd.commands.FUEL_RATE, callback=get_fuel_rate)
-obdconn.start()
+if obdconn.status() == OBDStatus.NOT_CONNECTED:
+	print('Obd not connected')
+
+if obdconn.status() == OBDStatus.CAR_CONNECTED:
+	obdconn.watch(obd.commands.SPEED, callback=get_speed)
+	obdconn.watch(obd.commands.RPM, callback=get_rpm)
+	obdconn.watch(obd.commands.ENGINE_LOAD, callback=get_load)
+	obdconn.watch(obd.commands.FUEL_STATUS, callback=get_fuel_status)
+	obdconn.watch(obd.commands.FUEL_LEVEL, callback=get_fuel_level)
+	obdconn.watch(obd.commands.COOLANT_TEMP, callback=get_engine_temp)
+	obdconn.watch(obd.commands.OIL_TEMP, callback=get_oil_temp)
+	obdconn.watch(obd.commands.THROTTLE_POS, callback=get_throttle_pos)
+	obdconn.watch(obd.commands.FUEL_RATE, callback=get_fuel_rate)
+	obdconn.start()

@@ -1,12 +1,4 @@
 import pygame
-from pygame.locals import *
-import pygame.gfxdraw
-import math
-import cairo
-import numpy
-
-
-# Graph
 import matplotlib as mpl
 import matplotlib.backends.backend_agg as agg
 import matplotlib.pyplot as plt
@@ -14,14 +6,37 @@ import pylab
 import numpy
 mpl.use("Agg")
 
-window = (640, 480)
-screen = pygame.display.set_mode(window, pygame.RESIZABLE)
-screen_w = screen.get_width()
-screen_h = screen.get_height()
-center = [int(screen_w / 2), int(screen_h / 2)]
+def draw_graph():
 
-surface_fuelusing = pygame.Surface(window)
-color_back_fig = (20/255,20/255,20/255)
+	color_back_fig = (20/255,20/255,20/255)
 
+	mpl.rcParams.update({
+	    "lines.color": "white",
+	    "patch.edgecolor": "white",
+	    "text.color": "white",
+	    "axes.facecolor": color_back_fig,
+	    "axes.edgecolor": "lightgray",
+	    "axes.labelcolor": "white",
+	    "xtick.color": "white",
+	    "ytick.color": "white",
+	    "grid.color": "lightgray",
+	    "figure.facecolor": color_back_fig,
+	    "figure.edgecolor": "black",
+	    "savefig.facecolor": "black",
+	    "savefig.edgecolor": "black"
+	})
 
-	return surface_fuelusing
+	fig, ax = plt.subplots()
+	x = numpy.linspace(0, 2, 10)
+	plt.plot(x, x, label="Fogyasztás")
+	plt.xlabel('Út (km)')
+	plt.ylabel('Fogyasztás (l/100km)')
+	plt.title("Átlagfogyasztás")
+	plt.legend()
+
+	canvas = agg.FigureCanvasAgg(fig)
+	canvas.draw()
+	renderer = canvas.get_renderer()
+	size = canvas.get_width_height()
+	return pygame.image.frombuffer(renderer.tostring_rgb(), size, "RGB")
+	
