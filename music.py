@@ -11,6 +11,8 @@ from mp3_tagger import MP3File
 from mutagen import File
 from drawlib import *
 
+END_MUSIC_EVENT = pygame.USEREVENT + 0
+
 screen_size = (640, 480)
 screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE) 
 screen_width = screen.get_width()
@@ -23,6 +25,7 @@ class Music():
     def __init__(self):
         pygame.mixer.init()
         self.play = False
+        self.hover = 0
 
     def getlist(self):
         self.musiclist = []
@@ -67,12 +70,16 @@ class Music():
         self.loadindex(self.musicindex-1)
 
     def playnext(self):
-        self.loadindex(self.musicindex+1)
+        if self.musicindex+1 > len(self.musiclist):
+            self.loadfirst()
+        else:
+            self.loadindex(self.musicindex+1)
 
     def playfirst(self):
         self.loadindex(0)
             
     def load(self, filename):
+        pygame.mixer.music.set_endevent(pygame.USEREVENT + 0)
         pygame.mixer.music.load(filename)
         pygame.mixer.music.play()
         self.audio = MP3(filename)
@@ -128,6 +135,12 @@ class Music():
         pygame.mixer.music.stop()
         self.play = False
 
+    def sethover(self, index):
+        self.hover = index
+
+    def gethover(self):
+        return self.hover
+
 
 # Milliseconds to time
 def toTime(millis):
@@ -146,12 +159,24 @@ def toTime(millis):
 
     return "{0}{1}:{2}{3}".format(m0, minutes, s0, seconds)
 
+# Frontend
+# Draw music player
+mus = Music()
+musiclist = mus.getlist()
+mus.playfirst()
+
 # Event listener
 def event_music(task_current, event):
 
     if task_current == 4:
         if event.type == pygame.MOUSEBUTTONDOWN:
+            i = 0
+            for index in range(mus.getmusicindex() + 1, mus.getmusicindex() + 5):
+                if hover(0, 160 + (i * 64), screen_width, 64):
+                    mus.sethover(index)
+                i += 1
 
+        if event.type == pygame.MOUSEBUTTONUP:
             # Prev
             if hover(0, screen_height - 64, 64, 64):
                 mus.playprev()
@@ -164,17 +189,14 @@ def event_music(task_current, event):
             if hover(128, screen_height - 64, 64, 64):
                 mus.playnext()
 
-            i = 0
-            for music in musiclist:
-                if hover((i*128),0,(i*128)+110,128):
-                    mus.load(music['filename'])
-                i+=1
+            # Select music
+            if(mus.gethover() != 0):
+                mus.loadindex(mus.gethover())
+                mus.sethover(0)
 
-# Frontend
-# Draw music player
-mus = Music()
-musiclist = mus.getlist()
-mus.playfirst()
+        if event.type == END_MUSIC_EVENT and event.code == 0:
+            mus.playnext()
+
 
 defaultcover = pil2cairo(Image.open("default.png"), 128, 128)
 playbutton = pil2cairo(Image.open("icons/play.png"), 32, 32)
@@ -200,7 +222,15 @@ def draw_musiclist(ctx):
             cover = defaultcover
 
         x = 64
-        y = 338 + (i * 128)
+        y = 320 + (i * 128)
+
+        if mus.gethover() == index:
+            ctx.save()
+            ctx.set_source_rgb(48/255,90/255,238/255)
+            ctx.rectangle(0, 160 + (i * 64), screen_width, 64)
+            ctx.fill()
+            ctx.restore()
+            ctx.close_path()
 
         ctx.save()
         ctx.fill()
@@ -214,7 +244,7 @@ def draw_musiclist(ctx):
         ctx.save()
         ctx.set_font_size(16)
         ctx.set_source_rgb(1, 1, 1)
-        draw_text(ctx,x+64, 208 + (i * 64), str(title))
+        draw_text(ctx,x+64, 196 + (i * 64), str(title))
         ctx.stroke()
         ctx.restore()
         ctx.close_path()
