@@ -6,7 +6,12 @@ import pylab
 import numpy
 mpl.use("Agg")
 
-def draw_graph():
+global consumptionx
+global consumptiony
+consumptionx = []
+consumptiony = []
+
+def draw_fuelusing():
 
 	color_back_fig = (20/255,20/255,20/255)
 
@@ -28,8 +33,8 @@ def draw_graph():
 
 	fig, ax = plt.subplots()
 	x = numpy.linspace(0, 2, 10)
-	plt.plot(x, x, label="Fogyasztás")
-	plt.xlabel('Út (km)')
+	plt.plot(consumptionx, consumptiony, label="Fogyasztás")
+	plt.xlabel('Idő (sec)')
 	plt.ylabel('Fogyasztás (l/100km)')
 	plt.title("Átlagfogyasztás")
 	plt.legend()
@@ -40,3 +45,6 @@ def draw_graph():
 	size = canvas.get_width_height()
 	return pygame.image.frombuffer(renderer.tostring_rgb(), size, "RGB")
 	
+def add_consumption(x, y):
+	consumptionx.append(x)
+	consumptiony.append(y)

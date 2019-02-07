@@ -1,8 +1,29 @@
 import obd
 from obd import OBDStatus
+import datetime
 
+global speed
+global fuelrates
+global fueling_time
 global obdconn
 global trip_km
+
+obddata = {
+	'speed': 0, 
+	'rpm': 0,
+	'load': 0,
+	'fuel_status': 0,
+	'fuel_level': 0,
+	'fuel_rate': 0,
+	'engine_temp': 0,
+	'oil_temp': 0,
+	'throttle_pos': 0,
+	'fuel_rates': 0,
+	'fueling_time': 0 
+}
+
+fuelrates = []
+
 
 obdconn = obd.Async()
 '''
@@ -12,62 +33,58 @@ print(dtc)
 obdstatic.close()
 '''
 
+def get_obd_data():
+	return obddata
+
 def get_connected():
 	return obdconn.status()
 
 def get_speed(data):
-	global speed
 	if not data.is_null():
-		speed = int(data.value.magnitude)
-		return speed
+		obddata['speed'] = int(data.value.magnitude)
 
 def get_rpm(data):
-	global rpm
 	if not data.is_null():
-		rpm = int(data.value.magnitude)
-		return rpm
+		obddata['rpm'] = int(data.value.magnitude)
 
 def get_load(data):
-	global load
 	if not data.is_null():
-		load = int(data.value.magnitude)
-		return load
+		obddata['load'] = int(data.value.magnitude)
 
 def get_fuel_status(data):
-	global fuel_status
 	if not data.is_null():
-		fuel_status = int(data.value.magnitude)
-		return fuel_status
+		obddata['fuel_status'] = int(data.value.magnitude)
 
 def get_fuel_level(data):
-	global fuel_level
 	if not data.is_null():
-		fuel_level = int(data.value.magnitude)
-		return fuel_level
+		obddata['fuel_level'] = int(data.value.magnitude)
 
 def get_engine_temp(data):
-	global engine_temp
 	if not data.is_null():
-		engine_temp = int(data.value.magnitude)
-		return engine_temp
+		obddata['engine_temp'] = int(data.value.magnitude)
 
 def get_oil_temp(data):
-	global oil_temp
 	if not data.is_null():
-		oil_temp = int(data.value.magnitude)
-		return oil_temp
+		obddata['oil_temp'] = int(data.value.magnitude)
 
 def get_throttle_pos(data):
-	global throttle_pos
 	if not data.is_null():
-		throttle_pos = int(data.value.magnitude)
-		return throttle_pos
+		obddata['throttle_pos'] = int(data.value.magnitude)
 
 def get_fuel_rate(data):
-	global fuel_rate
 	if not data.is_null():
-		fuel_rate = int(data.value.magnitude)
-		return fuel_rate
+		obddata['fuel_rate'] = int(data.value.magnitude)
+		fuel_rates.append(obddata['fuel_rate'])
+		if(len(fuelrates) > 0):
+			check_fueling(obddata['fuel_rate'])
+	return fuel_rate
+
+def check_fueling(fuel_rate):
+	if fuel_rate > fuelrates[len(fuel_rates) - 1]:
+		obddata['fueling_time'] = str(datetime.datetime.utcnow())
+		print('Fueling detected at: ' + fueling_time)
+
+
 
 if obdconn.status() == OBDStatus.NOT_CONNECTED:
 	print('Obd not connected')

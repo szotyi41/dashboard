@@ -171,7 +171,8 @@ def event_music(task_current, event):
     if task_current == 4:
         if event.type == pygame.MOUSEBUTTONDOWN:
             i = 0
-            for index in range(mus.getmusicindex() + 1, mus.getmusicindex() + 5):
+            listlen = len(musiclist)
+            for index in range(min(mus.getmusicindex() + 1, listlen), min(mus.getmusicindex() + 5, listlen)):
                 if hover(0, 160 + (i * 64), screen_width, 64):
                     mus.sethover(index)
                 i += 1
@@ -207,7 +208,8 @@ nextbutton = pil2cairo(Image.open("icons/next.png"), 32, 32)
 def draw_musiclist(ctx):
 
     i = 0
-    for index in range(mus.getmusicindex() + 1, len(musiclist)):
+    listlen = len(musiclist)
+    for index in range(min(mus.getmusicindex() + 1, listlen), min(mus.getmusicindex() + 5, listlen)):
         
         music = musiclist[index]
 
@@ -272,7 +274,7 @@ def draw_music():
     # Status bar
     ctx.save()
     ctx.set_source_rgb(8/255,50/255,198/255)
-    ctx.rectangle(0, screen_height - 80, int((mus.getposition() / mus.getlength()) * screen_width), 16)
+    ctx.rectangle(0, screen_height - 72, int((mus.getposition() / mus.getlength()) * screen_width), 8)
     ctx.fill()
     ctx.restore()
     ctx.close_path()

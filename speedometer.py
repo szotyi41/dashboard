@@ -11,7 +11,7 @@ screen_center = [int(screen_width / 2), int(screen_height / 2)]
 fuelicon = cairo.ImageSurface.create_from_png("icons/fuel.png")
 tempicon = cairo.ImageSurface.create_from_png("icons/temp.png")
 
-def draw_speedometer():
+def draw_speedometer(obddata):
 
 	# Init cairo
 	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, screen_width, screen_height)
@@ -26,25 +26,25 @@ def draw_speedometer():
 	r = 120
 	x = int(screen_center[0] - (screen_center[0] / 2))
 	y = int(screen_center[1])
-	draw_meter(ctx,x,y,r,'kmh',120,220)
+	draw_meter(ctx,x,y,r,'kmh', obddata['speed'], 220)
 
 	# Draw rpm
 	r = 120
 	x = int(screen_center[0] + (screen_center[0] / 2))
 	y = int(screen_center[1])
-	draw_meter(ctx,x,y,r,'rpm',4000,8000,True)
+	draw_meter(ctx,x,y,r,'rpm', obddata['rpm'], 8000,True)
 
 	# Draw fuellevel
 	r = 32
 	x = int(screen_center[0] - (screen_center[0] / 2) - 96)
 	y = int(screen_height - 64)
-	draw_level(ctx,x,y,r,fuelicon,20,100, True, True)
+	draw_level(ctx,x,y,r,fuelicon, obddata['fuel_level'], 100, True, True)
 
 	# Draw enginetemp
 	r = 32
 	x = int(screen_center[0] + (screen_center[0] / 2) + 96)
 	y = int(screen_height - 64)
-	draw_level(ctx,x,y,r,tempicon,20,100, True)
+	draw_level(ctx,x,y,r,tempicon, obddata['engine_temp'], 120, True)
 
 	# Draw info
 	x = int(screen_center[0])

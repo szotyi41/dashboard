@@ -15,18 +15,26 @@ screen_width = screen.get_width()
 screen_height = screen.get_height()
 screen_center = [int(screen_width / 2), int(screen_height / 2)]
 
+fr = 40
+sec = 0
+
 task = 0
 task_current = 0
 surface_x = 0
+
+# Draw first
+obddata = get_obd_data()
+surface_fuelusing = draw_fuelusing()
+surface_speedometer = draw_speedometer(obddata)
+surface_sideview = draw_sideview()
+surface_weather = draw_weather()
+surface_music = draw_music()
 
 # Draw 
 color_back = (20,20,20)
 color_text = (220,220,220)
 color_speedo_back = (22,22,22)
 color_speedo = (63,155,217)
-
-# Draw once
-surface_fuelusing = draw_graph()
 
 # Running endless
 clock = pygame.time.Clock()
@@ -83,10 +91,23 @@ while running:
 	# Draw hud
 	screen.fill(color_back)
 
-	surface_speedometer = draw_speedometer()
-	surface_sideview = draw_sideview()
-	surface_weather = draw_weather()
-	surface_music = draw_music()
+	obddata = get_obd_data()
+
+	if task_current == 1:
+		surface_speedometer = draw_speedometer(obddata)
+
+	if sec % 60 == True and task_current == 1:
+		add_consumption(sec, obddata['fuel_level'])
+		surface_fuelusing = draw_fuelusing()
+
+	if task_current == 2:
+		surface_sideview = draw_sideview()
+
+	if task_current == 3:
+		surface_weather = draw_weather()
+
+	if task_current == 4:
+		surface_music = draw_music()
 
 	screen.blit(surface_speedometer, (surface_x + (screen_width * 0),0))
 	screen.blit(surface_fuelusing, (surface_x + (screen_width * 1),0))
@@ -96,6 +117,7 @@ while running:
 
 	pygame.display.update()
 	clock.tick(60)
+	sec += 1
 
 obdconn.unwatch_all()
 obdconn.close()
